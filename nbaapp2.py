@@ -1,6 +1,12 @@
+# Import dependencies
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
+
+
+# Path to the directory where logos are saved
+logo_directory = 'NBA Logos'
 
 def load_data(file_path):
     try:
@@ -24,15 +30,21 @@ def get_roster(df_team):
 def get_lineup(df_team, players):
     return df_team[df_team['players_list'].apply(lambda x: set(x) == set(players))]
 
-def plot_histograms(df_team, df_important, columns):
+def plot_histograms(df_team, df_metrics, columns):
     for col in columns:
         fig = px.histogram(df_team, x=col)
-        fig.add_vline(x=df_important[col].values[0], line_color='red')
+        fig.add_vline(x=df_metrics[col].values[0], line_color='red')
         st.plotly_chart(fig, use_container_width=True)
+
+def get_logo_filename(team_name):
+    last_word = team_name.split()[-1].lower()
+    logo_filename = f"{last_word}.gif"
+    logo_path = os.path.join(logo_directory, logo_filename)
+    return logo_path
 
 def main():
     st.set_page_config(layout="wide")
-    st.title('NBA Lineup Analytics Tool')
+    st.title('NBA 2023/2024 Regular Season Lineup Analytics Tool')
     
     df = load_data('NBALineup2023.csv')
     if df is None:
@@ -44,6 +56,15 @@ def main():
     df_team = get_team_data(df, team)
     roster = get_roster(df_team)
     
+    # Load team logos
+    team_df = load_data('NBALineup2023.csv')
+    if team_df is not None:
+        logo_path = get_logo_filename(team)
+        if os.path.exists(logo_path):
+            st.image(logo_path, caption=team)
+        else:
+            st.write(f"Logo for {team} not found.")
+
     players = st.multiselect('Select your players', roster, roster[0:5])
     
     if len(players) != 5:
@@ -55,23 +76,24 @@ def main():
         st.error("No lineup found for the selected players.")
         return
     
-    df_important = df_lineup[['MIN', 'PLUS_MINUS', 'FG_PCT', 'FG3_PCT']]
-    st.dataframe(df_important)
+    df_metrics = df_lineup[['MIN', 'PLUS_MINUS', 'FG_PCT', 'FG3_PCT']]
+    st.dataframe(df_metrics)
     
     columns = ['MIN', 'PLUS_MINUS', 'FG_PCT', 'FG3_PCT']
     col1, col2, col3, col4 = st.columns(4)
     
     with col1: 
-        plot_histograms(df_team, df_important, [columns[0]])
+        plot_histograms(df_team, df_metrics, [columns[0]])
     
     with col2: 
-        plot_histograms(df_team, df_important, [columns[1]])
+        plot_histograms(df_team, df_metrics, [columns[1]])
     
     with col3: 
-        plot_histograms(df_team, df_important, [columns[2]])
+        plot_histograms(df_team, df_metrics, [columns[2]])
     
     with col4: 
-        plot_histograms(df_team, df_important, [columns[3]])
+        plot_histograms(df_team, df_metrics, [columns[3]])
 
 if __name__ == "__main__":
     main()
+
