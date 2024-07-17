@@ -17,7 +17,10 @@ def load_data(file_path):
         return None
 
 def preprocess_data(df):
-    df['players_list'] = df['players_list'].str.replace(r"[\"\' \[\]]", '').str.split(',')
+    # Remove square brackets and single quotes, then split by commas
+    df['players_list'] = df['players_list'].str.replace(r"[\[\]]", '').str.replace("'", "").str.split(',')
+    # Strip whitespace from each player name
+    df['players_list'] = df['players_list'].apply(lambda x: [name.strip() for name in x])
     return df
 
 def get_team_data(df, team):
